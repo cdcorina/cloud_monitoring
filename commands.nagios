@@ -1,0 +1,61 @@
+Nagios is an open-source software that offers monitoring and alerting services
+www.nagios.org
+
+Steps to add a new instance to be monitored by Nagios:
+On the Nagios server you must add the new host in the /etc/check_mk/main.mk file:
+For example:
+Main.mk:
+# Put your host names here
+# all_hosts = [ 'localhost' ]
+all_hosts = [ '127.0.0.1|lin'
+            ]
+ 
+On the new machine you want to be monitored, you must install the check_mk agent:
+
+yum -y install check-mk-agent xinetd
+vi /etc/xinetd.d/check-mk-agent
+Add line 
+only_from =  192.0.0.7 127.0.0.1
+
+ 
+service xinetd enable
+service xinetd start
+Test it with this command:
+telnet 127.0.0.1 6556
+ 
+ You will find the check-mk-agent in /usr/share/check-mk-agent/
+ 
+In the plugins folders, you must copy these files:
+apache_status
+mk_logwatch
+chmod +x apache_status
+chmod +x mk_logwatch
+ 
+Create the file /etc/check-mk-agent/logwatch.cfg, Inside you can add the logs you want to be monitored, for example:
+/opt/nifi-1.3.0/logs/nifi-app.log 
+ C Exception*
+ C ERROR*
+ 
+In the folder /usr/share/check-mk-agent/local you can add any monitoring script you want, that will be checked by default every minute by Nagios.
+filecount.sh
+ 
+ 
+ 
+After any modification (new local script, new log to be monitored, any configuration change) you must run the following commands on the Nagios server so that it takes them into account:
+cmk -Iv IP_new_host
+cmk -II
+cmk -U
+service nagios restart
+
+
+Other useful commands:
+cmk -D - check all instances' thresholds
+
+/var/lib/check_mk/autochecks - remove unwanted checks (e.g UNKOWN log file not present)
+/var/lib/check_mk/cache - instances monitored
+/var/lib/check_mk/logwatch - logs per instance - to be deleted if file too big
+
+cmk -II - run inventory
+cmk -U 
+service nagios restart
+sudo systemctl restart nagios
